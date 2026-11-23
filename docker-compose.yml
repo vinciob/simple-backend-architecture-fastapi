@@ -1,0 +1,54 @@
+x-backend: &backend
+  build: .
+  environment:
+    ENVIRONMENT: ${ENVIRONMENT:-development}
+    DATABASE_URL: postgresql+asyncpg://showcase:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/showcase
+    DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-20}
+    JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+    CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:5173}
+    JWT_ISSUER: ${JWT_ISSUER:-fastapi-showcase}
+    JWT_AUDIENCE: ${JWT_AUDIENCE:-showcase-api}
+    ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-600}
+    REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-604800}
+    PASSWORD_CONCURRENCY: ${PASSWORD_CONCURRENCY:-4}
+
+services:
+  backend:
+    <<: *backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health/db', timeout=6)"]
+      interval: 15s
+      timeout: 7s
+      retries: 3
+    stop_grace_period: 30s
+  migrate:
+    <<: *backend
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: showcase
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: showcase
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U showcase -d showcase"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+volumes:
+  postgres_data:
