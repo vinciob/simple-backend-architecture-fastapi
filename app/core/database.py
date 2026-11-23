@@ -1,16 +1,26 @@
 """A pool per worker and an isolated AsyncSession per request."""
 
+from datetime import datetime
 from collections.abc import AsyncIterator
 
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import DateTime
 
 from app.core.config import DatabaseSettings
 
 
 class Base(DeclarativeBase):
-    pass
+    """Base class for all declarative models.
+
+    All ORM models should inherit from this class to ensure consistent
+    metadata and table definitions.
+    """
+
+    # created_at and update_at
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 def create_engine(settings: DatabaseSettings) -> AsyncEngine:
