@@ -16,9 +16,9 @@ from app.core.config import Settings
 from app.core.database import create_engine
 from app.core.errors import ErrorHandler
 from app.core.security import Security
-# from app.modules.auth.routes import router as auth_router
-# from app.modules.tasks.routes import router as tasks_router
-# from app.modules.users.routes import router as users_router
+from app.modules.auth.routes import router as auth_router
+from app.modules.tasks.routes import router as tasks_router
+from app.modules.users.routes import router as users_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -28,7 +28,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # Application lifespan context manager for resource setup and teardown.
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         engine = create_engine(config)
         try:
             async with engine.connect() as connection:
@@ -65,9 +65,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ErrorHandler.register(app)
 
     # Include application routers for different modules.
-    # app.include_router(users_router)
-    # app.include_router(auth_router)
-    # app.include_router(tasks_router)
+    app.include_router(users_router)
+    app.include_router(auth_router)
+    app.include_router(tasks_router)
 
     # Health check endpoints for liveness and readiness probes.
     @app.get("/health", tags=["Health"])
