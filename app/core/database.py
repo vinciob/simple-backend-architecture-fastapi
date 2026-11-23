@@ -1,6 +1,6 @@
 """A pool per worker and an isolated AsyncSession per request."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from collections.abc import AsyncIterator
 
 from fastapi import Request
@@ -19,8 +19,17 @@ class Base(DeclarativeBase):
     """
 
     # created_at and update_at
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC), 
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
 
 
 def create_engine(settings: DatabaseSettings) -> AsyncEngine:
